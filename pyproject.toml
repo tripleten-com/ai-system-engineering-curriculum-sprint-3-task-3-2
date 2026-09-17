@@ -1,0 +1,202 @@
+# Coldline - Task 3.1
+# File: pyproject.toml
+# Component: Python project contract
+# Purpose: Define one installable project, pinned tools, tests, and Poe commands.
+# Interacts With: src packages, tests, uv.lock
+# Sprint/Task: Sprint 3 - Project 3 / Task 3.1
+# Concepts: Single-project reproducibility
+# Tools: uv, Hatchling, Poe, Ruff, mypy, pytest
+
+[project]
+name = "coldline-task-2-1"
+version = "0.1.0"
+description = "Coldline Sprint 3 platform operations and reliability project"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic==1.17.1",
+  "asyncpg==0.31.0",
+  "boto3==1.42.5",
+  "opentelemetry-api==1.44.0",
+  "opentelemetry-exporter-otlp==1.44.0",
+  "opentelemetry-instrumentation-redis==0.65b0",
+  "opentelemetry-sdk==1.44.0",
+  "prometheus-client==0.26.0",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.15.0",
+  "redis==5.3.1",
+  "sqlalchemy==2.0.44",
+]
+
+[dependency-groups]
+api = [
+  "fastapi==0.141.1",
+  "opentelemetry-instrumentation-fastapi==0.65b0",
+  "pyyaml==6.0.3",
+  "uvicorn==0.52.4",
+]
+worker = []
+dev = [
+  "httpx==0.28.1",
+  "jsonschema==4.26.0",
+  "locust>=2.31",
+  "mypy==2.3.1",
+  "poethepoet==0.48.0",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pyyaml==6.0.3",
+  "ruff==0.16.3",
+]
+
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/api", "src/worker", "src/domain", "src/ports", "src/adapters"]
+
+[tool.uv]
+default-groups = ["api", "worker", "dev"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --import-mode=importlib"
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+markers = [
+  "runtime: requires the running Docker Compose stack",
+  "assessed: checks student work this Task assesses, so a fresh starter is expected to fail it",
+  "submission_boundary: asserts a student submission stays inside this Task's editable paths",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "D"]
+ignore = ["D203", "D213"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = [
+  "src",
+  "infra/scripts",
+  "tests/contract/authoring.py",
+  "tests/contract/runtime_adapters.py",
+  "tests/contract/retrieval_runtime.py",
+  "tests/contract/submission_validation.py",
+  "tests/smoke/readiness.py",
+  "tests/e2e/scenario.py",
+  "tests/e2e/baseline.py",
+  "tests/golden.py",
+  "tests/doubles",
+  "tests/benchmark",
+  "tests/regression.py",
+  "tests/diagnostics",
+  "tests/release",
+  "tests/contract/test_release.py",
+]
+
+[[tool.mypy.overrides]]
+# These runtime libraries do not publish complete typing metadata.
+# Typed boundary wrappers keep their use inside adapters and configuration modules.
+module = ["asyncpg", "boto3", "botocore", "botocore.*", "jsonschema", "yaml"]
+ignore_missing_imports = true
+
+[tool.poe.tasks]
+format = "ruff format ."
+format-check = "ruff format --check ."
+lint = "ruff check ."
+typecheck = "mypy"
+unit = "pytest tests/unit"
+contract = "pytest tests/contract -m 'not runtime and not assessed'"
+runtime-contract = "pytest tests/contract -m runtime"
+smoke = "pytest tests/smoke -m runtime"
+e2e = "pytest tests/e2e -m runtime"
+telemetry-repair = "pytest tests/contract/test_telemetry_repair.py -m runtime"
+retrieval-runtime = "pytest tests/contract/test_retrieval_runtime.py -m runtime"
+# Alembic diagnostics. The initializer already brings the schema to head on
+# every start, so these are for inspecting and stepping that state by hand.
+migrate = "docker compose --profile observability --profile localstack exec -T api alembic upgrade head"
+migrate-down = "docker compose --profile observability --profile localstack exec -T api alembic downgrade -1"
+migrate-current = "docker compose --profile observability --profile localstack exec -T api alembic current"
+# The experiment harness. One command per arm, one retained report per
+# capture, so the baseline evidence survives an experiment run: see
+# docs/contracts/benchmark-report.schema.json for the retained report contract.
+# `compare` re-measures nothing - it reads those two reports and applies the
+# published adoption rule from config/adoption-policy.yaml.
+benchmark-baseline = "python -m tests.benchmark.run --arm baseline"
+benchmark-experiment = "python -m tests.benchmark.run --arm experiment"
+compare = "python -m tests.benchmark.compare"
+# Re-measures both arms and prints the drift from the retained reports. It
+# writes nothing and grades nothing; a recorded decision keeps the evidence it
+# was graded against.
+benchmark-reproduce = "python -m tests.benchmark.reproduce"
+# The retained-report validation, which assesses nothing and needs no
+# container: a missing or self-inconsistent report must fail validation rather
+# than become a decision.
+report-contract = "pytest tests/contract/test_benchmark_reports.py"
+# The intermediate stage inspector, kept as Part 3 evidence for the defense.
+diagnose = "python -m tests.diagnostics.inspect"
+# The Task 3.1 release tooling. `release-build` builds both manifest releases for
+# both first-party images; the roll commands never build (`--no-build`) and print
+# the transition record; `release-status` shows what is running and what limits
+# Docker applied. `release-checks` are the five assessed checks; they perform one
+# rollout and one rollback against the running stack.
+release-build = "python -m tests.release.rollout build"
+roll-forward = "python -m tests.release.rollout roll --to candidate"
+roll-back = "python -m tests.release.rollout roll --to known_good"
+release-status = "python -m tests.release.rollout status"
+release-checks = "pytest tests/contract/test_release.py -m runtime"
+authorization-checkpoint = "pytest tests/contract/test_authorization_checkpoint.py -m runtime"
+student-tests = "pytest tests/student"
+test = ["unit", "contract"]
+preflight = "python infra/scripts/preflight.py"
+start = "docker compose --profile observability --profile localstack up --build --wait"
+ready = "python -m tests.smoke.readiness"
+ingest = "docker compose --profile observability --profile localstack exec -T api python -m api.ingest"
+baseline = "python -m tests.e2e.baseline"
+scenario = "python -m tests.e2e.scenario"
+answers = "python -m tests.contract.submission_validation"
+structure = "python -m tests.contract.authoring"
+compose-config = "docker compose --profile observability --profile localstack config --quiet"
+verify = [
+  "start",
+  "ready",
+  "ingest",
+  "release-build",
+  "release-checks",
+  "smoke",
+  "e2e",
+  "answers",
+  "student-tests",
+]
+author-verify = [
+  "format-check",
+  "lint",
+  "typecheck",
+  "unit",
+  "contract",
+  "structure",
+  "compose-config",
+]
+dogfood-verify = [
+  "author-verify",
+  "ready",
+  "ingest",
+  "runtime-contract",
+  "smoke",
+  "e2e",
+  "scenario",
+  "baseline",
+  "restart",
+  "ready",
+  "e2e",
+  "reset",
+]
+restart = "docker compose --profile observability --profile localstack restart api worker"
+reset = "docker compose --profile observability --profile localstack down --volumes --remove-orphans"
+stop = "docker compose --profile observability --profile localstack down --remove-orphans"
+load-test = "locust -f loadtest/locustfile.py --headless --users 2 --spawn-rate 2 --run-time 30s --host http://localhost:${COLDLINE_API_HOST_PORT:-8000}"
+reset-baseline = { shell = "docker compose --profile observability --profile localstack exec -T postgres psql -U coldline -d coldline -c \"TRUNCATE exceptions;\" && docker compose --profile observability --profile localstack exec -T redis redis-cli FLUSHDB && docker compose --profile observability --profile localstack restart worker" }

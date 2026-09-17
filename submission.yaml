@@ -1,0 +1,24 @@
+# Coldline - Task 3.2
+# File: submission.yaml
+# Component: Student answer sheet
+# Purpose: Record that this Task has no direct answer to record.
+# Interacts With: Submission schema and public verifier
+# Sprint/Task: Sprint 3 - Project 3 / Task 3.2
+# Concepts: Deterministic assessment, implementation as evidence
+# Tools: YAML
+
+# Keep answers: {} in submission.yaml; the sample shows the same empty mapping.
+# Complete the wiring described in the Task contract.
+# Do not include secrets, personal data, or local absolute paths.
+
+# Task 3.2 — Step 1: Wire the supplied resilient adapter into the worker
+# Wrap the deterministic provider with the supplied ResilientModelProvider in
+# src/worker/bootstrap.py, using the supplied bounded settings.
+# Step 2: Fail fast on a terminal failure
+# Add the missing except branch in src/worker/use_cases.py so a
+# TerminalProviderError records model_provider_terminal_failure immediately,
+# on the first delivery, instead of waiting for retryable exhaustion.
+# Source: docs/student/task-3-2-contract.md.
+# Your implementation and its tests provide the evidence for these Steps.
+# Keep this mapping empty; this Task has no direct-answer fields to complete.
+answers: {}
