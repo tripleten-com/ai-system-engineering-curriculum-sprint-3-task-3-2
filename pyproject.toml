@@ -1,9 +1,9 @@
-# Coldline - Task 3.1
+# Coldline - Task 3.2
 # File: pyproject.toml
 # Component: Python project contract
 # Purpose: Define one installable project, pinned tools, tests, and Poe commands.
 # Interacts With: src packages, tests, uv.lock
-# Sprint/Task: Sprint 3 - Project 3 / Task 3.1
+# Sprint/Task: Sprint 3 - Project 3 / Task 3.2
 # Concepts: Single-project reproducibility
 # Tools: uv, Hatchling, Poe, Ruff, mypy, pytest
 
@@ -94,8 +94,6 @@ files = [
   "tests/benchmark",
   "tests/regression.py",
   "tests/diagnostics",
-  "tests/release",
-  "tests/contract/test_release.py",
 ]
 
 [[tool.mypy.overrides]]
@@ -139,16 +137,6 @@ benchmark-reproduce = "python -m tests.benchmark.reproduce"
 report-contract = "pytest tests/contract/test_benchmark_reports.py"
 # The intermediate stage inspector, kept as Part 3 evidence for the defense.
 diagnose = "python -m tests.diagnostics.inspect"
-# The Task 3.1 release tooling. `release-build` builds both manifest releases for
-# both first-party images; the roll commands never build (`--no-build`) and print
-# the transition record; `release-status` shows what is running and what limits
-# Docker applied. `release-checks` are the five assessed checks; they perform one
-# rollout and one rollback against the running stack.
-release-build = "python -m tests.release.rollout build"
-roll-forward = "python -m tests.release.rollout roll --to candidate"
-roll-back = "python -m tests.release.rollout roll --to known_good"
-release-status = "python -m tests.release.rollout status"
-release-checks = "pytest tests/contract/test_release.py -m runtime"
 authorization-checkpoint = "pytest tests/contract/test_authorization_checkpoint.py -m runtime"
 student-tests = "pytest tests/student"
 test = ["unit", "contract"]
@@ -162,11 +150,10 @@ answers = "python -m tests.contract.submission_validation"
 structure = "python -m tests.contract.authoring"
 compose-config = "docker compose --profile observability --profile localstack config --quiet"
 verify = [
+  "unit",
   "start",
   "ready",
   "ingest",
-  "release-build",
-  "release-checks",
   "smoke",
   "e2e",
   "answers",

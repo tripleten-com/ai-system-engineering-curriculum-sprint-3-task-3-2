@@ -68,9 +68,9 @@ poe verify
 | `poe stop` | Remove containers and the network, keeping named volumes |
 | `poe reset` | Remove containers, the network, and local named volumes |
 
-For Task 3.2, `poe verify` rebuilds and starts the stack, ingests the supplied corpus, runs the
-unit and contract suites — including the two tests your wiring must satisfy — the smoke tests,
-the end-to-end exception workflow, and the answer-sheet checks.
+For Task 3.2, `poe verify` runs the unit suite — including the two tests your wiring must
+satisfy — then rebuilds and starts the stack, ingests the supplied corpus, and runs the smoke
+tests, the end-to-end exception workflow, and the answer-sheet checks.
 
 ## Folder map
 
@@ -100,9 +100,8 @@ repository root/
 │   └── adapters/        Technology-specific implementations, including the supplied resilient model-provider wrapper
 └── tests/
     ├── unit/            Isolated behavior checks
-    ├── release/         The supplied build, rollout, rollback, and status tool
     ├── benchmark/       Supplied evaluation harness, metrics, and adoption policy
-    ├── contract/        Interface, release, retrieval, and repository checks
+    ├── contract/        Interface, retrieval, and repository checks
     ├── diagnostics/     Supplied stage inspector
     ├── doubles/         Supplied deterministic test doubles
     ├── student/         Your own tests
@@ -186,8 +185,8 @@ These paths are student-editable:
 
 Keep the resilient wrapper, the failure taxonomy, the provider settings, and every test file
 exactly as supplied; the public checks compare them. Everything else in this repository is
-supplied, including the release manifest, the release tool, the Dockerfiles, and the rest of the
-application source.
+supplied, including `compose.yaml` (Task 1's already-verified release configuration), the
+release manifest, and the rest of the application source.
 
 ### Student walkthrough
 
