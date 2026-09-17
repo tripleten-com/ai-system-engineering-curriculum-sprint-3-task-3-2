@@ -206,8 +206,8 @@ def _contains_repository_file(directory: Path) -> bool:
 def _check_placeholders(files: list[Path]) -> list[str]:
     """Reject temporary placeholders and restricted-looking export paths.
 
-    No Task 3.1 path may look like a solution, evaluator, or held-out asset. The
-    release manifest and tool are supplied fixtures and carry none of those names.
+    No Task 3.2 path may look like a solution, evaluator, or held-out asset. The
+    release manifest is a supplied fixture and carries none of those names.
     """
     failures: list[str] = []
     for path in files:
