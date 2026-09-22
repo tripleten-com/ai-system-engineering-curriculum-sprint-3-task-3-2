@@ -70,9 +70,7 @@ async def _no_sleep(_seconds: float) -> None:
 async def test_success_on_first_attempt_needs_no_retry() -> None:
     """A clean first attempt must return without consuming a retry."""
     inner = ScriptedProvider([SUCCESS])
-    provider = ResilientModelProvider(
-        inner, timeout_seconds=1, max_attempts=3, backoff_seconds=0
-    )
+    provider = ResilientModelProvider(inner, timeout_seconds=1, max_attempts=3, backoff_seconds=0)
 
     result = await provider.summarize(REQUEST)
 
