@@ -108,6 +108,13 @@ format-check = "ruff format --check ."
 lint = "ruff check ."
 typecheck = "mypy"
 unit = "pytest tests/unit"
+# Unlike every other Task, this Task's assessed exercise (the two TerminalProviderError
+# tests) lives at the unit level, not the contract level, so it's deliberately not
+# excluded from plain `unit` — the student README and contract tell students to run
+# `poe unit` to see those two tests fail, then pass. `author-verify` needs the same
+# "fresh starter is expected to pass" guarantee `contract` already gives it, so it
+# uses this filtered variant instead.
+unit-static = "pytest tests/unit -m 'not assessed'"
 contract = "pytest tests/contract -m 'not runtime and not assessed'"
 runtime-contract = "pytest tests/contract -m runtime"
 smoke = "pytest tests/smoke -m runtime"
@@ -163,7 +170,7 @@ author-verify = [
   "format-check",
   "lint",
   "typecheck",
-  "unit",
+  "unit-static",
   "contract",
   "structure",
   "compose-config",
