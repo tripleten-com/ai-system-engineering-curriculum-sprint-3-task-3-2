@@ -9,7 +9,7 @@ cannot change. You edit two files. You do not write a new adapter.
 | Assessed | By |
 |---|---|
 | The pull request changes only `src/worker/bootstrap.py`, `src/worker/use_cases.py`, and `submission.yaml` | Automated, in this repository |
-| The worker calls the model provider through a bounded timeout and a bounded number of attempts | Automated, against `ResilientModelProvider`'s own supplied tests |
+| The worker calls the model provider through a bounded timeout and a bounded number of attempts | Automated, against `build_model_provider` in `src/worker/bootstrap.py` |
 | A terminal provider failure is recorded on the very first delivery, never waiting for retryable exhaustion | Automated, against `WorkerApplication` |
 | A retryable failure keeps today's behavior: it retries across deliveries and only fails once the delivery limit is spent | Automated, against `WorkerApplication` |
 | Your reasoning about why a fixed inline retry loop is not the same as a bounded one | Your instructor, at the Project Defense |
@@ -23,19 +23,21 @@ cannot change. You edit two files. You do not write a new adapter.
 | The provider-resilience settings | `src/worker/config.py` | `model_timeout_ms`, `model_provider_max_attempts`, `model_retry_backoff_ms`, each bounded |
 | The wrapper's own tests | `tests/unit/adapters/test_resilient_model_provider.py` | prove the wrapper in isolation; you are not graded on them directly |
 | The two tests this Task adds to the worker's suite | `tests/unit/worker/test_use_cases.py` | `test_terminal_provider_failure_is_recorded_on_the_first_delivery` and `test_terminal_provider_failure_at_the_final_delivery_is_still_distinct` |
+| The wiring test for the worker's provider | `tests/unit/worker/test_bootstrap.py` | `test_worker_composes_the_resilient_provider_from_settings` |
 
 ## The two steps
 
 ### Step 1 — Wire the resilient provider into the worker
 
-`src/worker/bootstrap.py` currently constructs the worker's `WorkerApplication` with a bare
+`src/worker/bootstrap.py` builds the worker's model provider in `build_model_provider(settings)`,
+and `run` passes whatever it returns to `WorkerApplication`. It currently returns a bare
 `DeterministicModelProvider(latency_ms=settings.model_latency_ms)`. Nothing bounds how long that
 call may run, and nothing bounds how many times it is retried before the worker gives up on it.
 
-Wrap it in `ResilientModelProvider`, reading the three settings `src/worker/config.py` already
-supplies: `model_timeout_ms`, `model_provider_max_attempts`, and `model_retry_backoff_ms` (each is
-milliseconds; `ResilientModelProvider` takes seconds). Pass the wrapped provider to
-`WorkerApplication`, not the bare deterministic one.
+Change `build_model_provider` to wrap it in `ResilientModelProvider`, reading the three settings
+`src/worker/config.py` already supplies: `model_timeout_ms`, `model_provider_max_attempts`, and
+`model_retry_backoff_ms` (each is milliseconds; `ResilientModelProvider` takes seconds). Return
+the wrapped provider, not the bare deterministic one.
 
 ### Step 2 — Fail fast on a terminal failure
 
@@ -56,7 +58,7 @@ exhausted.
 ## Commands
 
 ```shell
-poe unit          # includes the wrapper's own tests and the worker's use-case tests
+poe unit          # includes the wrapper's own tests and the worker's use-case and wiring tests
 poe contract      # structure, submission, and boundary checks
 poe verify        # the full public student verification path
 ```
@@ -65,6 +67,7 @@ poe verify        # the full public student verification path
 
 | Check | What it looks at |
 |---|---|
+| `test_worker_composes_the_resilient_provider_from_settings` | `build_model_provider` must return a `ResilientModelProvider` around the deterministic provider, with the timeout, attempt, and backoff settings converted from milliseconds to seconds |
 | `test_terminal_provider_failure_is_recorded_on_the_first_delivery` | A terminal failure on `delivery_count=1` must return `ACK`, transition to `FAILED`, and record `model_provider_terminal_failure` |
 | `test_terminal_provider_failure_at_the_final_delivery_is_still_distinct` | The same terminal outcome at `delivery_count=3` must still record `model_provider_terminal_failure`, not `model_provider_exhausted` |
 | `test_third_provider_failure_is_recorded_and_acknowledged` and its neighbors | The existing retryable-until-exhausted behavior must still hold, unchanged, for anything that is not a `TerminalProviderError` |

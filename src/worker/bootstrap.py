@@ -27,9 +27,19 @@ from adapters.model import DeterministicModelProvider
 from adapters.persistence import PostgresExceptionRepository
 from adapters.queue import RedisJobQueue
 from adapters.telemetry import configure_tracing
+from ports import ModelProvider
 from worker.config import WorkerSettings
 from worker.runtime import run_loop
 from worker.use_cases import WorkerApplication
+
+
+def build_model_provider(settings: WorkerSettings) -> ModelProvider:
+    """Return the model provider the worker calls for each summary.
+
+    The supplied checkpoint returns the bare deterministic emulator, with no
+    per-attempt timeout and no retry budget of its own.
+    """
+    return DeterministicModelProvider(latency_ms=settings.model_latency_ms)
 
 
 async def run() -> None:
@@ -57,7 +67,7 @@ async def run() -> None:
     start_http_server(settings.metrics_port)
     application = WorkerApplication(
         PostgresExceptionRepository(pool),
-        DeterministicModelProvider(latency_ms=settings.model_latency_ms),
+        build_model_provider(settings),
         clock=lambda: datetime.now(UTC),
         maximum_attempts=settings.maximum_attempts,
     )
