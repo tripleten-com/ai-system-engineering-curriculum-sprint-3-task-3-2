@@ -58,7 +58,7 @@ poe verify
 
 | Command | Use |
 |---|---|
-| `poe unit` | Run fast isolated behavior tests, including the resilient-provider wrapper's own tests and the worker's use-case tests |
+| `poe unit` | Run fast isolated behavior tests, including the resilient-provider wrapper's own tests and the worker's use-case and wiring tests |
 | `poe contract` | Check interfaces, boundaries, submissions, and repository structure |
 | `poe smoke` | Check the initialized running platform |
 | `poe e2e` | Run the external API-to-worker workflow |
@@ -68,7 +68,7 @@ poe verify
 | `poe stop` | Remove containers and the network, keeping named volumes |
 | `poe reset` | Remove containers, the network, and local named volumes |
 
-For Task 3.2, `poe verify` runs the unit suite — including the two tests your wiring must
+For Task 3.2, `poe verify` runs the unit suite — including the three tests your wiring must
 satisfy — then rebuilds and starts the stack, ingests the supplied corpus, and runs the smoke
 tests, the end-to-end exception workflow, and the answer-sheet checks.
 
@@ -192,10 +192,10 @@ release manifest, and the rest of the application source.
 
 See **Task 2: Provider reliability** in your course platform for the full walkthrough. In
 outline: read `resilient.py`'s docstrings and its own tests, wrap the deterministic provider with
-it in `bootstrap.py` using the three supplied settings, add the missing `except
-TerminalProviderError` branch in `use_cases.py` ahead of the existing catch-all, run `poe unit`
-until the two new tests pass without breaking the existing ones, run `poe verify`, and open your
-pull request.
+it in `build_model_provider` in `bootstrap.py` using the three supplied settings, add the missing
+`except TerminalProviderError` branch in `use_cases.py` ahead of the existing catch-all, run
+`poe unit` until the three assessed tests pass without breaking the existing ones, run
+`poe verify`, and open your pull request.
 
 ## Operational limits
 

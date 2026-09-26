@@ -109,9 +109,9 @@ lint = "ruff check ."
 typecheck = "mypy"
 unit = "pytest tests/unit"
 # Unlike every other Task, this Task's assessed exercise (the two TerminalProviderError
-# tests) lives at the unit level, not the contract level, so it's deliberately not
-# excluded from plain `unit` — the student README and contract tell students to run
-# `poe unit` to see those two tests fail, then pass. `author-verify` needs the same
+# tests and the provider wiring test) lives at the unit level, not the contract level, so
+# it's deliberately not excluded from plain `unit` — the student README and contract tell
+# students to run `poe unit` to see those three tests fail, then pass. `author-verify` needs the same
 # "fresh starter is expected to pass" guarantee `contract` already gives it, so it
 # uses this filtered variant instead.
 unit-static = "pytest tests/unit -m 'not assessed'"
