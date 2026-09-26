@@ -16,6 +16,7 @@ from datetime import datetime
 from enum import StrEnum
 
 from domain.contracts import ExceptionJob, ExceptionState, ModelRequest
+from domain.errors import TerminalProviderError
 from domain.repositories import ExceptionRepository
 from ports import ModelProvider
 
@@ -92,6 +93,17 @@ class WorkerApplication:
                     allowed_max_c=job.reading.allowed_max_c,
                 )
             )
+        except TerminalProviderError:
+            # A terminal failure cannot succeed on a later attempt, so the
+            # remaining deliveries are spent on an outcome that will not
+            # change. Record it with its own reason and acknowledge now.
+            await self._repository.transition(
+                job.exception_id,
+                {ExceptionState.PROCESSING},
+                ExceptionState.FAILED,
+                failure_reason="model_provider_terminal_failure",
+            )
+            return ProcessingDisposition.ACK
         except Exception:
             if delivery_count >= self._maximum_attempts:
                 await self._repository.transition(
