@@ -16,6 +16,7 @@ from datetime import datetime
 from enum import StrEnum
 
 from domain.contracts import ExceptionJob, ExceptionState, ModelRequest
+from domain.errors import TerminalProviderError
 from domain.repositories import ExceptionRepository
 from ports import ModelProvider
 
@@ -54,9 +55,10 @@ class WorkerApplication:
         Completed or failed identities are safe replays and need no new model
         call. In-flight work is retried until the third delivery. A successful
         provider result is persisted before ``ACK`` is returned. A provider
-        failure returns ``RETRY`` unless the delivery limit is exhausted. A
-        missing record returns a distinct acknowledgement so the runtime can
-        expose the broken persistence-before-publish invariant.
+        failure returns ``RETRY`` unless the delivery limit is exhausted, and a
+        terminal provider failure fails on its first delivery under its own
+        reason. A missing record returns a distinct acknowledgement so the
+        runtime can expose the broken persistence-before-publish invariant.
         """
         record = await self._repository.get(job.exception_id)
         if record is None:
@@ -92,6 +94,17 @@ class WorkerApplication:
                     allowed_max_c=job.reading.allowed_max_c,
                 )
             )
+        except TerminalProviderError:
+            # A terminal failure cannot succeed on any later attempt, so the
+            # delivery budget is irrelevant: record the distinct reason now and
+            # acknowledge, instead of spending redeliveries on the same outcome.
+            await self._repository.transition(
+                job.exception_id,
+                {ExceptionState.PROCESSING},
+                ExceptionState.FAILED,
+                failure_reason="model_provider_terminal_failure",
+            )
+            return ProcessingDisposition.ACK
         except Exception:
             if delivery_count >= self._maximum_attempts:
                 await self._repository.transition(
