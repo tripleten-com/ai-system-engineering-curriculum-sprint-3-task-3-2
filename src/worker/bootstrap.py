@@ -23,7 +23,7 @@ from prometheus_client import start_http_server
 from redis.asyncio import Redis
 
 from adapters.logging import configure_json_logging
-from adapters.model import DeterministicModelProvider, ResilientModelProvider
+from adapters.model import DeterministicModelProvider
 from adapters.persistence import PostgresExceptionRepository
 from adapters.queue import RedisJobQueue
 from adapters.telemetry import configure_tracing
@@ -36,18 +36,10 @@ from worker.use_cases import WorkerApplication
 def build_model_provider(settings: WorkerSettings) -> ModelProvider:
     """Return the model provider the worker calls for each summary.
 
-    The deterministic emulator is wrapped in the supplied
-    ``ResilientModelProvider`` so every call is bounded by its own timeout and
-    attempt budget. The three bounds come from settings, which own the only
-    validated source for each value; the wrapper takes seconds, the settings
-    are milliseconds.
+    The supplied checkpoint returns the bare deterministic emulator, with no
+    per-attempt timeout and no retry budget of its own.
     """
-    return ResilientModelProvider(
-        DeterministicModelProvider(latency_ms=settings.model_latency_ms),
-        timeout_seconds=settings.model_timeout_ms / 1000,
-        max_attempts=settings.model_provider_max_attempts,
-        backoff_seconds=settings.model_retry_backoff_ms / 1000,
-    )
+    return DeterministicModelProvider(latency_ms=settings.model_latency_ms)
 
 
 async def run() -> None:
