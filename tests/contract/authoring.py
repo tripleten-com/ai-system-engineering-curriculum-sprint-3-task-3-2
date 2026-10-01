@@ -57,10 +57,12 @@ DISTRIBUTION_NAME = "coldline-task-2-1"
 # Each checkpoint owns its own Compose project so two materializations cannot
 # share containers or volumes. The name is checked, not assumed: a whole-file
 # Compose replacement that forgot to change it would otherwise reconfigure the
-# previous Task's stack. Task 3.2 changes no Compose service, image, or
-# profile, so it keeps Task 3.1's project identity rather than isolating a
-# stack that is byte-for-byte the same one.
-COMPOSE_PROJECT_NAME = "coldline-task-3-1"
+# previous Task's stack. Task 3.2 supplies its own copy of Task 3.1's
+# compose.yaml under its own name. Even with identical services, the images
+# build from this checkout and the observability configuration is bind-mounted
+# from it, so a shared name would let either checkout's `poe start` recreate,
+# and its `poe reset` delete, the other's containers and volumes.
+COMPOSE_PROJECT_NAME = "coldline-task-3-2"
 TASK_ID = "3.2"
 SCHEMA_FILES = (
     "infra/postgres/001_opening_checkpoint.sql",

@@ -42,9 +42,12 @@ Each of these ports can be overridden by setting the matching `COLDLINE_API_HOST
 file (copy `.env.example`) if a default collides with something already running on your machine.
 Keep the override in place for every `poe` command.
 
+This Task runs as its own Compose project, `coldline-task-3-2`. If an earlier Task's stack is
+still running, run `poe stop` in that Task's repository first; otherwise `poe start` here fails
+because the published ports are already taken.
+
 PostgreSQL, Redis, worker metrics, and OTLP remain inside the Compose network. Codespaces uses the
-same `compose.yaml` and keeps every forwarded port private. This Task changes no Compose service,
-image, or profile, so it keeps Task 3.1's Compose project identity.
+same `compose.yaml` and keeps every forwarded port private.
 
 ## Command path
 
